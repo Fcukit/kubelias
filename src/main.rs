@@ -1,4 +1,5 @@
 use structopt::StructOpt;
+use std::process::Command;
 
 /// Search for a pattern in a file and display the lines that contain it.
 #[derive(StructOpt, Debug)]
@@ -21,6 +22,17 @@ struct Opt {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Opt::from_args();
-    println!("args: {:#?}", args);
+
+    let command = Command::new("kubectl")
+				.arg("get")
+				.arg("pods")
+				.arg("--kubeconfig")
+				.arg(args.config)
+				.arg("-n")
+				.arg(args.namespace)
+   				.output()
+				.expect("fail"); 
+    println!("output - {:#?}", command);
+
     Ok(())
 }
