@@ -55,6 +55,88 @@ struct Opt {
     cmd: String
 }
 
+// ---BEGIN CURRENT POD
+#[derive(StructOpt, Debug)]
+struct Kubelias {
+    #[structopt(name = "supervisor", default_value = "Puck", long = "supervisor")]
+    supervising_faerie: String,
+    tree: Option<String>,
+    #[structopt(subcommand)]
+    cmd: KuberCommand
+}
+
+#[derive(StructOpt, Debug)]
+#[structopt(rename_all = "kebab-case")]
+enum KuberCommand {
+    CurrentPod,
+    GetPod {
+        /// kubectl config file
+        #[structopt(short = "c", long = "config")]
+        config: String,
+
+        /// kubectl namespace
+        #[structopt(short = "n", long = "namespace")]
+        namespace: String,
+
+        /// The path to the file to read
+        #[structopt(parse(from_os_str))]
+        path: std::path::PathBuf
+    }
+}
+// ---END CURRENT POD
+
+// *********BEGIN************
+
+#[derive(StructOpt, Debug)]
+struct MakeCookie {
+    #[structopt(name = "supervisor", default_value = "Puck", long = "supervisor")]
+    supervising_faerie: String,
+    /// The faerie tree this cookie is being made in.
+    tree: Option<String>,
+    #[structopt(subcommand)]  // Note that we mark a field as a subcommand
+    cmd: Commanddd
+}
+
+#[derive(StructOpt, Debug)]
+#[structopt(rename_all = "kebab-case")]
+enum Commanddd {
+    /// Pound acorns into flour for cookie dough.
+    Pound {
+        acorns: u32
+    },
+    /// Add magical sparkles -- the secret ingredient!
+    Sparkle {
+        #[structopt(short, parse(from_occurrences))]
+        magicality: u64,
+        #[structopt(short)]
+        color: String
+    },
+    Finish(Finish),
+}
+
+// Subcommand can also be externalized by using a 1-uple enum variant
+#[derive(StructOpt, Debug)]
+struct Finish {
+    #[structopt(short)]
+    time: u32,
+    #[structopt(subcommand)]  // Note that we mark a field as a subcommand
+    finish_type: FinishType
+}
+
+// subsubcommand!
+#[derive(StructOpt, Debug)]
+enum FinishType {
+    Glaze {
+        applications: u32
+    },
+    Powder {
+        flavor: String,
+        dips: u32
+    }
+}
+
+// *********END************
+
 #[derive(Debug, Serialize, Deserialize)]
 struct MyConfig {
     version: u8,
@@ -67,6 +149,27 @@ impl ::std::default::Default for MyConfig {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cfg: MyConfig = confy::load("my_app")?;
+    println!("{:#?}", cfg);
+
+    // let args = Opt::from_args();
+    let args = Kubelias::from_args();
+    println!("{:#?}", args);
+    println!("{:#?}", args.cmd);
+    Ok(())
+}
+
+fn main_3() -> Result<(), Box<dyn std::error::Error>> {
+    let cfg: MyConfig = confy::load("my_app")?;
+    println!("{:#?}", cfg);
+
+    // let args = Opt::from_args();
+    let args = MakeCookie::from_args();
+    println!("{:#?}", args);
+    Ok(())
+}
+
+fn main_2() -> Result<(), Box<dyn std::error::Error>> {
     let cfg: MyConfig = confy::load("my_app")?;
     println!("{:#?}", cfg);
 
