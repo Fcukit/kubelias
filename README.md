@@ -40,6 +40,7 @@ Current pod is project-x-backend-866b45c9b6-pvf6z
 ```
 
 `➜  kubelias alias project-x-stage-bash bash`
+
 `➜  kubelias alias project-x-stage-console rails console`
 
 ```
