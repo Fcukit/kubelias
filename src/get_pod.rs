@@ -1,35 +1,15 @@
-use structopt::StructOpt;
 use std::process::Command;
 use std::str;
 
+use crate::custom_structs::*;
+
 use csv::StringRecord;
-use serde::{Serialize, Deserialize};
 use regex::Regex;
 
 pub use crate::writer::write_current_pod;
 
 use std::collections::HashMap;
-use std::io::{self, Write};
-
-#[derive(StructOpt, Debug)]
-pub struct GetPod {
-  /// kubectl config file
-  #[structopt(parse(from_os_str), short = "c", long = "config")]
-  pub config: std::path::PathBuf,
-
-  /// kubectl namespace
-  #[structopt(short = "n", long = "namespace")]
-  pub namespace: String
-}
-
-#[derive(Deserialize)]
-struct Record {
-    name: String,
-    ready: String,
-    status: String,
-    restarts: String,
-    age: String
-}
+use std::io::{self};
 
 pub fn process(args: GetPod) -> Result<(), Box<dyn std::error::Error>>  {
   let command = Command::new("kubectl")
@@ -82,16 +62,12 @@ pub fn process(args: GetPod) -> Result<(), Box<dyn std::error::Error>>  {
 
   println!("Press number of needed pod or 'q' to quit.");
 
-  let mut stdout = io::stdout();
-
   let mut input_text = String::new();
   io::stdin()
       .read_line(&mut input_text)
       .expect("failed to read from stdin");
 
   let trimmed = input_text.trim();
-
-  // let mut aliases = HashMap::new();
 
   match trimmed.parse::<u8>() {
       Ok(i) => {
@@ -101,7 +77,6 @@ pub fn process(args: GetPod) -> Result<(), Box<dyn std::error::Error>>  {
           write_current_pod(value.into());
 
           println!("{:#?}", args);
-          // aliases.insert();
 
         },
       Err(..) => println!("this was not an integer: {}", trimmed),
