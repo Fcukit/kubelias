@@ -1,6 +1,8 @@
 mod writer;
+mod get_pod;
 
 pub use crate::writer::write_current_pod;
+pub use crate::get_pod::process;
 
 use structopt::StructOpt;
 use std::process::Command;
@@ -26,7 +28,6 @@ use regex::Regex;
 extern crate confy;
 use std::io::Read;
 
-
 #[derive(Deserialize)]
 struct Record {
     name: String,
@@ -36,26 +37,6 @@ struct Record {
     age: String
 }
 
-/// Search for a pattern in a file and display the lines that contain it.
-#[derive(StructOpt, Debug)]
-#[structopt(rename_all = "kebab-case")]
-struct Opt {
-    /// kubectl config file
-    #[structopt(short = "c", long = "config")]
-    config: String,
-
-    /// kubectl namespace
-    #[structopt(short = "n", long = "namespace")]
-    namespace: String,
-
-    /// The path to the file to read
-    #[structopt(parse(from_os_str))]
-    path: std::path::PathBuf,
-
-    cmd: String
-}
-
-// ---BEGIN CURRENT POD
 #[derive(StructOpt, Debug)]
 struct Kubelias {
     #[structopt(name = "supervisor", default_value = "Puck", long = "supervisor")]
@@ -69,206 +50,42 @@ struct Kubelias {
 #[structopt(rename_all = "kebab-case")]
 enum KuberCommand {
     CurrentPod,
-    GetPod {
-        /// kubectl config file
-        #[structopt(short = "c", long = "config")]
-        config: String,
+    GetPod(GetPod),
+    Alias {
+        #[structopt(short = "a", long = "alias")]
+        alias: String,
 
-        /// kubectl namespace
-        #[structopt(short = "n", long = "namespace")]
-        namespace: String,
-
-        /// The path to the file to read
-        #[structopt(parse(from_os_str))]
-        path: std::path::PathBuf
-    }
-}
-// ---END CURRENT POD
-
-// *********BEGIN************
-
-#[derive(StructOpt, Debug)]
-struct MakeCookie {
-    #[structopt(name = "supervisor", default_value = "Puck", long = "supervisor")]
-    supervising_faerie: String,
-    /// The faerie tree this cookie is being made in.
-    tree: Option<String>,
-    #[structopt(subcommand)]  // Note that we mark a field as a subcommand
-    cmd: Commanddd
-}
-
-#[derive(StructOpt, Debug)]
-#[structopt(rename_all = "kebab-case")]
-enum Commanddd {
-    /// Pound acorns into flour for cookie dough.
-    Pound {
-        acorns: u32
-    },
-    /// Add magical sparkles -- the secret ingredient!
-    Sparkle {
-        #[structopt(short, parse(from_occurrences))]
-        magicality: u64,
-        #[structopt(short)]
-        color: String
-    },
-    Finish(Finish),
-}
-
-// Subcommand can also be externalized by using a 1-uple enum variant
-#[derive(StructOpt, Debug)]
-struct Finish {
-    #[structopt(short)]
-    time: u32,
-    #[structopt(subcommand)]  // Note that we mark a field as a subcommand
-    finish_type: FinishType
-}
-
-// subsubcommand!
-#[derive(StructOpt, Debug)]
-enum FinishType {
-    Glaze {
-        applications: u32
-    },
-    Powder {
-        flavor: String,
-        dips: u32
+        cmd: String
     }
 }
 
-// *********END************
+#[derive(StructOpt, Debug)]
+pub struct GetPod {
+  /// kubectl config file
+  #[structopt(parse(from_os_str), short = "c", long = "config")]
+  pub config: std::path::PathBuf,
 
-#[derive(Debug, Serialize, Deserialize)]
-struct MyConfig {
-    version: u8,
-    api_key: String,
-}
-
-/// `MyConfig` implements `Default`
-impl ::std::default::Default for MyConfig {
-    fn default() -> Self { Self { version: 0, api_key: "".into() } }
+  /// kubectl namespace
+  #[structopt(short = "n", long = "namespace")]
+  pub namespace: String
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let cfg: MyConfig = confy::load("my_app")?;
-    println!("{:#?}", cfg);
-
-    // let args = Opt::from_args();
     let args = Kubelias::from_args();
-    println!("{:#?}", args);
-    println!("{:#?}", args.cmd);
-    Ok(())
-}
+    println!("{:#?}", &args);
 
-fn main_3() -> Result<(), Box<dyn std::error::Error>> {
-    let cfg: MyConfig = confy::load("my_app")?;
-    println!("{:#?}", cfg);
-
-    // let args = Opt::from_args();
-    let args = MakeCookie::from_args();
-    println!("{:#?}", args);
-    Ok(())
-}
-
-fn main_2() -> Result<(), Box<dyn std::error::Error>> {
-    let cfg: MyConfig = confy::load("my_app")?;
-    println!("{:#?}", cfg);
-
-    let args = Opt::from_args();
-
-    let command = Command::new("kubectl")
-                           .arg("get")
-                           .arg("pods")
-                           .arg("--kubeconfig")
-                           .arg(&args.config)
-                           .arg("-n")
-                           .arg(&args.namespace)
-                           .output()
-                           .expect("fail");
-
-    let s = match str::from_utf8(&command.stdout) {
-        Ok(v) => v,
-        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-    };
-
-    let mut reader = csv::Reader::from_reader(s.as_bytes());
-
-    let headers = reader.headers()?;
-
-    let re = Regex::new(r"\s+").unwrap();
-    let t = re.replace_all(&headers[0], ",");
-
-    let v: Vec<&str> = t.split(',').collect();
-    let lv: Vec<_> = v.iter().map(|s| s.to_lowercase()).collect();
-
-    println!("Headers: {:?}", lv);
-
-    let header = StringRecord::from(lv);
-
-    let mut reader = csv::Reader::from_reader(s.as_bytes());
-
-    let mut hash = HashMap::new();
-
-    for (i, record) in reader.records().enumerate() {
-        let record = record?;
-
-        let re = Regex::new(r"\s+").unwrap();
-        let t = re.replace_all(&record[0], ",");
-
-        let v: Vec<&str> = t.split(',').collect();
-        let lv: Vec<_> = v.iter().map(|s| s.to_lowercase()).collect();
-        let string_record = StringRecord::from(lv);
-        let row: Record = string_record.deserialize(Some(&header))?;
-        hash.insert(i + 1, String::from(row.name));
+    match &args.cmd {
+        KuberCommand::GetPod(x) => {
+            println!("GetPod !!! {:#?}", &args.cmd);
+            let get_pod_struct = get_pod::GetPod { config: x.config.to_path_buf(), namespace: x.namespace.to_string() };
+            let x: Result<(), Box<dyn std::error::Error>> = get_pod::process(get_pod_struct);
+        },
+        CurrentPod => { println!("CurrentPod !!!") },
+        _ => {
+            println!("Error !!!");
+            ()
+        }
     }
-
-    for (key, value) in &hash {
-        println!("{} :{}", key, value);
-    }
-
-    println!("Press number of needed pod or 'q' to quit.");
-
-    let mut stdout = io::stdout();
-    let no_modifiers = KeyModifiers::empty();
-
-    let mut input_text = String::new();
-    io::stdin()
-        .read_line(&mut input_text)
-        .expect("failed to read from stdin");
-
-    let trimmed = input_text.trim();
-
-    // let mut aliases = HashMap::new();
-
-    match trimmed.parse::<u8>() {
-        Ok(i) => {
-            println!("your integer input: {}", i);
-            let value = hash.get(&i.into()).unwrap();
-            println!("Your choice is {:?}", value);
-            write_current_pod(value.into());
-            let command_for_alias = "='kubectl --kubeconfig=/Users/vlasv90/evrone/configs/viju-stage-conf -n product-x-backend exec -it 1 -- bundle exec rails c'";
-            // aliases.insert()
-            // println!("{:?}", &command_2);
-         },
-        Err(..) => println!("this was not an integer: {}", trimmed),
-    };
-
-
-    // // //key detection
-    // match read().unwrap() {
-    //     Event::Key(KeyEvent {
-    //             code: KeyCode::Char('h'),
-    //             modifiers: no_modifiers,
-    //     }) => execute!(stdout, Clear(ClearType::CurrentLine), Print("Hello world!")).unwrap(),
-    //     Event::Key(KeyEvent {
-    //             code: KeyCode::Char('q'),
-    //             modifiers: no_modifiers,
-    //     }) => return Ok(()),
-    //     Event::Key(KeyEvent {
-    //             code: KeyCode::Char('q'),
-    //             modifiers: no_modifiers,
-    //     }) => return Ok(()),
-    //     _ => ()
-    // }
 
     Ok(())
 }
