@@ -15,12 +15,7 @@ pub struct Kubelias {
 pub enum KuberCommand {
     CurrentPod,
     GetPod(GetPod),
-    Alias {
-        #[structopt(short = "a", long = "alias")]
-        alias: String,
-
-        cmd: String
-    }
+    Alias(Alias)
 }
 
 #[derive(StructOpt, Debug)]
@@ -32,6 +27,13 @@ pub struct GetPod {
   /// kubectl namespace
   #[structopt(short = "n", long = "namespace")]
   pub namespace: String
+}
+
+#[derive(StructOpt, Debug)]
+pub struct Alias {
+    #[structopt(short = "n", long = "name")]
+    pub name: String,
+    pub exec_cmd: String
 }
 
 #[derive(Deserialize)]

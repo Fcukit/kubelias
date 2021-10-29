@@ -30,6 +30,7 @@ pub fn process(args: GetPod) -> Result<(), Box<dyn std::error::Error>>  {
   let mut reader = csv::Reader::from_reader(s.as_bytes());
 
   let headers = reader.headers()?;
+  println!("{:?}", headers);
 
   let re = Regex::new(r"\s+").unwrap();
   let t = re.replace_all(&headers[0], ",");
@@ -57,7 +58,7 @@ pub fn process(args: GetPod) -> Result<(), Box<dyn std::error::Error>>  {
   }
 
   for (key, value) in &hash {
-      println!("{} :{}", key, value);
+      println!("{} - {}", key, value);
   }
 
   println!("Press number of needed pod or 'q' to quit.");
@@ -72,9 +73,9 @@ pub fn process(args: GetPod) -> Result<(), Box<dyn std::error::Error>>  {
   match trimmed.parse::<u8>() {
       Ok(i) => {
           println!("your integer input: {}", i);
-          let value = hash.get(&i.into()).unwrap();
-          println!("Your choice is {:?}", value);
-          write_current_pod(value.into());
+          let pod_name = hash.get(&i.into()).unwrap();
+          println!("Your choice is {:?}", pod_name);
+          write_current_pod(pod_name.into(), args.config.to_string(), args.namespace.into() );
 
           println!("{:#?}", args);
 
