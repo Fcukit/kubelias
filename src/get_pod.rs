@@ -30,7 +30,6 @@ pub fn process(args: GetPod) -> Result<(), Box<dyn std::error::Error>>  {
   let mut reader = csv::Reader::from_reader(s.as_bytes());
 
   let headers = reader.headers()?;
-  println!("{:?}", headers);
 
   let re = Regex::new(r"\s+").unwrap();
   let t = re.replace_all(&headers[0], ",");
@@ -72,12 +71,9 @@ pub fn process(args: GetPod) -> Result<(), Box<dyn std::error::Error>>  {
 
   match trimmed.parse::<u8>() {
       Ok(i) => {
-          println!("your integer input: {}", i);
           let pod_name = hash.get(&i.into()).unwrap();
           println!("Your choice is {:?}", pod_name);
-          write_current_pod(pod_name.into(), args.config.to_string(), args.namespace.into() );
-
-          println!("{:#?}", args);
+          write_current_pod(pod_name.into(), args.config.into_os_string().into_string().unwrap(), args.namespace.into() );
 
         },
       Err(..) => println!("this was not an integer: {}", trimmed),
