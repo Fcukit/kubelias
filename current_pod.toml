@@ -1,2 +1,4 @@
 [current_pod]
-pod = "product-x-backend-769c589cff-sjrhr"
+config = "/Users/vlasv90/evrone/configs/viju-stage-conf"
+namespace = "product-x-backend"
+pod_name = "product-x-backend-68f8468b8f-fzs8l"
